@@ -37,6 +37,14 @@
       border-radius: 4px;
       border: 1px solid #ccc;
     }
+    .checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .checkboxes label {
+      font-weight: normal;
+    }
     #chartContainer {
       margin-top: 30px;
     }
@@ -65,6 +73,13 @@
       <label for="years">Projection Horizon (Years)</label>
       <input type="number" id="years" value="10" />
     </div>
+    <div class="form-group checkboxes">
+      <label><input type="checkbox" id="toggleNominal" checked /> Nominal BTC</label>
+      <label><input type="checkbox" id="toggleReal" checked /> Real BTC</label>
+      <label><input type="checkbox" id="togglePortfolioNominal" checked /> Nominal Portfolio</label>
+      <label><input type="checkbox" id="togglePortfolioReal" checked /> Real Portfolio</label>
+      <label><input type="checkbox" id="togglePowerLaw" checked /> Power Law</label>
+    </div>
     <button onclick="runSimulation()">Run Simulation</button>
     <div id="chartContainer">
       <canvas id="btcChart"></canvas>
@@ -73,95 +88,61 @@
 
   <script>
     function runSimulation() {
-      const startPrice = Number.parseFloat(document.getElementById('startingPrice').value);
-      const btcAmount = Number.parseFloat(document.getElementById('btcAmount').value);
-      const inflationRate = Number.parseFloat(document.getElementById('inflationRate').value) / 100;
-      const returnRate = Number.parseFloat(document.getElementById('returnRate').value) / 100;
-      const years = Number.parseInt(document.getElementById('years').value);
+      const startPrice = parseFloat(document.getElementById('startingPrice').value);
+      const btcAmount = parseFloat(document.getElementById('btcAmount').value);
+      const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+      const returnRate = parseFloat(document.getElementById('returnRate').value) / 100;
+      const years = parseInt(document.getElementById('years').value);
 
       if (!Number.isFinite(startPrice) || !Number.isFinite(btcAmount) || !Number.isFinite(inflationRate) || !Number.isFinite(returnRate) || !Number.isFinite(years)) {
         alert('Please enter valid numeric inputs.');
         return;
       }
 
-      const labels = [];
-      const nominalPrices = [];
-      const realPrices = [];
-      const portfolioNominal = [];
-      const portfolioReal = [];
-      const powerLawPrices = [];
-
+      const labels = [], nominalPrices = [], realPrices = [], portfolioNominal = [], portfolioReal = [], powerLawPrices = [];
       const alpha = 0.5;
       const k = startPrice / Math.pow(1, alpha);
 
       for (let t = 0; t <= years; t++) {
         labels.push(`Year ${t}`);
-
         const nominal = startPrice * Math.pow(1 + returnRate, t);
         const real = nominal / Math.pow(1 + inflationRate, t);
-
         nominalPrices.push(nominal);
         realPrices.push(real);
         portfolioNominal.push(nominal * btcAmount);
         portfolioReal.push(real * btcAmount);
+        powerLawPrices.push(k * Math.pow(Math.max(t, 1), alpha));
+      }
 
-        const powerYear = Math.max(t, 1);
-        const powerPrice = k * Math.pow(powerYear, alpha);
-        powerLawPrices.push(powerPrice);
+      const datasets = [];
+      if (document.getElementById('toggleNominal').checked) {
+        datasets.push({ label: 'Nominal BTC Price', data: nominalPrices, borderColor: 'orange', fill: false });
+      }
+      if (document.getElementById('toggleReal').checked) {
+        datasets.push({ label: 'Real BTC Price (Inflation Adjusted)', data: realPrices, borderColor: 'blue', borderDash: [5, 5], fill: false });
+      }
+      if (document.getElementById('togglePortfolioNominal').checked) {
+        datasets.push({ label: 'Nominal Portfolio Value', data: portfolioNominal, borderColor: 'green', fill: false });
+      }
+      if (document.getElementById('togglePortfolioReal').checked) {
+        datasets.push({ label: 'Real Portfolio Value (Inflation Adjusted)', data: portfolioReal, borderColor: 'purple', borderDash: [5, 5], fill: false });
+      }
+      if (document.getElementById('togglePowerLaw').checked) {
+        datasets.push({ label: 'Power Law BTC Price', data: powerLawPrices, borderColor: 'red', borderDash: [2, 2], fill: false });
       }
 
       const ctx = document.getElementById('btcChart').getContext('2d');
-      if (window.btcChart) window.btcChart.destroy();
+      if (window.btcChart && typeof window.btcChart.destroy === 'function') {
+        window.btcChart.destroy();
+      }
       window.btcChart = new Chart(ctx, {
         type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Nominal BTC Price',
-              data: nominalPrices,
-              borderColor: 'orange',
-              fill: false
-            },
-            {
-              label: 'Real BTC Price (Inflation Adjusted)',
-              data: realPrices,
-              borderColor: 'blue',
-              borderDash: [5, 5],
-              fill: false
-            },
-            {
-              label: 'Nominal Portfolio Value',
-              data: portfolioNominal,
-              borderColor: 'green',
-              fill: false
-            },
-            {
-              label: 'Real Portfolio Value (Inflation Adjusted)',
-              data: portfolioReal,
-              borderColor: 'purple',
-              borderDash: [5, 5],
-              fill: false
-            },
-            {
-              label: 'Power Law BTC Price',
-              data: powerLawPrices,
-              borderColor: 'red',
-              borderDash: [2, 2],
-              fill: false
-            }
-          ]
-        },
+        data: { labels, datasets },
         options: {
           responsive: true,
           plugins: {
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            },
-            legend: {
-              position: 'bottom'
-            }
+            tooltip: { mode: 'index', intersect: false },
+            legend: { position: 'bottom' }
           },
           interaction: {
             mode: 'nearest',
@@ -171,16 +152,10 @@
           scales: {
             y: {
               beginAtZero: false,
-              title: {
-                display: true,
-                text: 'USD'
-              }
+              title: { display: true, text: 'USD' }
             },
             x: {
-              title: {
-                display: true,
-                text: 'Year'
-              }
+              title: { display: true, text: 'Year' }
             }
           }
         }
