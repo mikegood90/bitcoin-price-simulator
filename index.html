@@ -73,11 +73,16 @@
 
   <script>
     function runSimulation() {
-      const startPrice = parseFloat(document.getElementById('startingPrice').value);
-      const btcAmount = parseFloat(document.getElementById('btcAmount').value);
-      const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
-      const returnRate = parseFloat(document.getElementById('returnRate').value) / 100;
-      const years = parseInt(document.getElementById('years').value);
+      const startPrice = Number.parseFloat(document.getElementById('startingPrice').value);
+      const btcAmount = Number.parseFloat(document.getElementById('btcAmount').value);
+      const inflationRate = Number.parseFloat(document.getElementById('inflationRate').value) / 100;
+      const returnRate = Number.parseFloat(document.getElementById('returnRate').value) / 100;
+      const years = Number.parseInt(document.getElementById('years').value);
+
+      if (!Number.isFinite(startPrice) || !Number.isFinite(btcAmount) || !Number.isFinite(inflationRate) || !Number.isFinite(returnRate) || !Number.isFinite(years)) {
+        alert('Please enter valid numeric inputs.');
+        return;
+      }
 
       const labels = [];
       const nominalPrices = [];
@@ -86,8 +91,8 @@
       const portfolioReal = [];
       const powerLawPrices = [];
 
-      const alpha = 0.5; // power law exponent
-      const k = startPrice / Math.pow(1, alpha); // scaling factor to match start price
+      const alpha = 0.5;
+      const k = startPrice / Math.pow(1, alpha);
 
       for (let t = 0; t <= years; t++) {
         labels.push(`Year ${t}`);
@@ -100,7 +105,7 @@
         portfolioNominal.push(nominal * btcAmount);
         portfolioReal.push(real * btcAmount);
 
-        const powerYear = t === 0 ? 1 : t;
+        const powerYear = Math.max(t, 1);
         const powerPrice = k * Math.pow(powerYear, alpha);
         powerLawPrices.push(powerPrice);
       }
