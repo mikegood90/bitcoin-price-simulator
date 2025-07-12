@@ -84,15 +84,25 @@
       const realPrices = [];
       const portfolioNominal = [];
       const portfolioReal = [];
+      const powerLawPrices = [];
+
+      const alpha = 0.5; // power law exponent
+      const k = startPrice / Math.pow(1, alpha); // scaling factor to match start price
 
       for (let t = 0; t <= years; t++) {
         labels.push(`Year ${t}`);
+
         const nominal = startPrice * Math.pow(1 + returnRate, t);
         const real = nominal / Math.pow(1 + inflationRate, t);
+
         nominalPrices.push(nominal);
         realPrices.push(real);
         portfolioNominal.push(nominal * btcAmount);
         portfolioReal.push(real * btcAmount);
+
+        const powerYear = t === 0 ? 1 : t;
+        const powerPrice = k * Math.pow(powerYear, alpha);
+        powerLawPrices.push(powerPrice);
       }
 
       const ctx = document.getElementById('btcChart').getContext('2d');
@@ -126,6 +136,13 @@
               data: portfolioReal,
               borderColor: 'purple',
               borderDash: [5, 5],
+              fill: false
+            },
+            {
+              label: 'Power Law BTC Price',
+              data: powerLawPrices,
+              borderColor: 'red',
+              borderDash: [2, 2],
               fill: false
             }
           ]
@@ -167,4 +184,3 @@
   </script>
 </body>
 </html>
-<!-- This is a test comment for staging -->
